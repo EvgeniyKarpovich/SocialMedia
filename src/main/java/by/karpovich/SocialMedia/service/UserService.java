@@ -75,4 +75,21 @@ public class UserService {
         log.info("method findByName -  User with username = {} found", entity.getUsername());
         return entity;
     }
+
+    public UserEntity findUserByIdWhichWillReturnModel(Long id) {
+        return userRepository.findById(id).orElseThrow(
+                () -> new NotFoundModelException("User with id = " + id + "not found"));
+    }
+
+    public UserEntity findUserEntityByIdFromToken(String token) {
+        Long userIdFromToken = getUserIdFromToken(token);
+
+        return findUserByIdWhichWillReturnModel(userIdFromToken);
+    }
+
+    public Long getUserIdFromToken(String authorization) {
+        String token = authorization.substring(7);
+        String userIdFromJWT = jwtUtils.getUserIdFromJWT(token);
+        return Long.parseLong(userIdFromJWT);
+    }
 }
