@@ -26,4 +26,17 @@ public class UserController {
                          @RequestPart("file") MultipartFile file) {
         postService.addImage(postId, authorization, file);
     }
+
+    @PutMapping("/posts/update/{postId}")
+    public void updatePost(@PathVariable("postId") Long postId,
+                           @RequestBody PostDtoForSaveUpdate postDto,
+                           @RequestHeader(value = "Authorization") String authorization) {
+        postService.updatePost(postDto, authorization, postId);
+    }
+
+    @DeleteMapping("/posts/{postId}")
+    public void deletePost(@PathVariable("postId") Long postId,
+                           @RequestHeader(value = "Authorization") String authorization) {
+        postService.deletePost(postId, authorization);
+    }
 }

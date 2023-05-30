@@ -11,6 +11,7 @@ import by.karpovich.SocialMedia.utils.FileUploadDownloadUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
@@ -37,6 +38,7 @@ public class PostService {
         postRepository.save(postEntity);
     }
 
+    @Transactional
     public void updatePost(PostDtoForSaveUpdate dto, String authorization, Long postId) {
         PostEntity postEntity = checkingIfUserHasPost(authorization, postId);
 
@@ -47,13 +49,13 @@ public class PostService {
         postRepository.save(postEntity);
     }
 
+    @Transactional
     public void deletePost(Long postId, String authorization) {
         PostEntity postEntity = checkingIfUserHasPost(authorization, postId);
-
         if (postRepository.findById(postEntity.getId()).isEmpty()) {
             throw new NotFoundModelException(String.format("Post with id = %s not found", postId));
         }
-        postRepository.deleteById(postId);
+        postRepository.deleteById(postEntity.getId());
     }
 
     //Проверяю принадлежит ли пост пользователю который проводит с ним манипуляции, если нет - ошибка
@@ -64,5 +66,4 @@ public class PostService {
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("You can't do it"));
     }
-
 }
