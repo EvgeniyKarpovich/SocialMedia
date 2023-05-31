@@ -1,12 +1,8 @@
 package by.karpovich.SocialMedia.api.controller;
 
-import by.karpovich.SocialMedia.api.dto.post.PostDtoForSaveUpdate;
-import by.karpovich.SocialMedia.api.dto.post.PostDtoOut;
-import by.karpovich.SocialMedia.service.PostService;
-import by.karpovich.SocialMedia.service.UserService;
+import by.karpovich.SocialMedia.service.UserServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -15,54 +11,39 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserController {
 
-    private final PostService postService;
-    private final UserService userService;
+    private final UserServiceImpl userServiceImpl;
 
-    @PostMapping("/posts")
-    public PostDtoOut save(@RequestBody PostDtoForSaveUpdate postDto,
-                           @RequestHeader(value = "Authorization") String authorization) {
-        return postService.save(postDto, authorization);
+    @PutMapping("/requests/send/{userId}")
+    public void sendFriendRequest(@PathVariable("userId") Long userId,
+                                  @RequestHeader(value = "Authorization") String authorization) {
+        userServiceImpl.sendFriendRequest(authorization, userId);
     }
 
-    @PutMapping("/posts/{postId}")
-    public void addImage(@PathVariable("postId") Long postId,
-                         @RequestHeader(value = "Authorization") String authorization,
-                         @RequestPart("file") MultipartFile file) {
-        postService.addImage(postId, authorization, file);
+    @PutMapping("/requests/accept/{reqId}")
+    public void acceptRequest(@PathVariable("reqId") Long reqId,
+                              @RequestHeader(value = "Authorization") String authorization) {
+        userServiceImpl.acceptRequest(authorization, reqId);
     }
 
-    @PutMapping("/posts/update/{postId}")
-    public void updatePost(@PathVariable("postId") Long postId,
-                           @RequestBody PostDtoForSaveUpdate postDto,
-                           @RequestHeader(value = "Authorization") String authorization) {
-        postService.updatePost(postDto, authorization, postId);
+    @PutMapping("/requests/reject/{reqId}")
+    public void rejectRequest(@PathVariable("reqId") Long reqId,
+                              @RequestHeader(value = "Authorization") String authorization) {
+        userServiceImpl.rejectRequest(authorization, reqId);
     }
 
-    @DeleteMapping("/posts/{postId}")
-    public void deletePost(@PathVariable("postId") Long postId,
-                           @RequestHeader(value = "Authorization") String authorization) {
-        postService.deletePost(postId, authorization);
-    }
-
-    @PutMapping("/proba/{userId}")
-    public void request(@PathVariable("userId") Long userId,
-                        @RequestHeader(value = "Authorization") String authorization) {
-        userService.sendFriendRequest(authorization, userId);
+    @PutMapping("/requests/unsubscribe/{reqId}")
+    public void unsubscribe(@PathVariable("reqId") Long reqId,
+                            @RequestHeader(value = "Authorization") String authorization) {
+        userServiceImpl.unsubscribe(authorization, reqId);
     }
 
     @GetMapping("/followers")
-    public List<String> aaaa(@RequestHeader(value = "Authorization") String authorization) {
-        return userService.getFollowers(authorization);
+    public List<String> getFollowers(@RequestHeader(value = "Authorization") String authorization) {
+        return userServiceImpl.getFollowers(authorization);
     }
 
     @GetMapping("/friends")
-    public List<String> bbbb(@RequestHeader(value = "Authorization") String authorization) {
-        return userService.getFriends(authorization);
-    }
-
-    @PutMapping("/proba2/{reqId}")
-    public void accept(@PathVariable("reqId") Long reqId,
-                       @RequestHeader(value = "Authorization") String authorization) {
-        userService.acceptRequest(authorization, reqId);
+    public List<String> getFriends(@RequestHeader(value = "Authorization") String authorization) {
+        return userServiceImpl.getFriends(authorization);
     }
 }

@@ -3,7 +3,7 @@ package by.karpovich.SocialMedia.api.controller;
 import by.karpovich.SocialMedia.api.dto.authentification.JwtResponse;
 import by.karpovich.SocialMedia.api.dto.authentification.LoginForm;
 import by.karpovich.SocialMedia.api.dto.authentification.RegistrationForm;
-import by.karpovich.SocialMedia.service.UserService;
+import by.karpovich.SocialMedia.service.UserServiceImpl;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -21,16 +21,16 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final UserService userService;
+    private final UserServiceImpl userServiceImpl;
 
     @PostMapping("/signin")
     public JwtResponse authenticateUser(@Valid @RequestBody LoginForm loginForm) {
-        return userService.signIn(loginForm);
+        return userServiceImpl.signIn(loginForm);
     }
 
     @PostMapping("/signup")
     public ResponseEntity<?> registerUser(@Valid @RequestBody RegistrationForm signUpRequest) {
-        userService.signUp(signUpRequest);
+        userServiceImpl.signUp(signUpRequest);
 
         return new ResponseEntity<>(String.format("%s registered successfully!", signUpRequest.getUsername()), HttpStatus.CREATED);
     }

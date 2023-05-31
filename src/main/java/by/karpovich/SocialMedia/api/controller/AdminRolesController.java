@@ -2,42 +2,42 @@ package by.karpovich.SocialMedia.api.controller;
 
 import by.karpovich.SocialMedia.api.dto.role.RoleDto;
 import by.karpovich.SocialMedia.jpa.entity.RoleEntity;
-import by.karpovich.SocialMedia.service.RoleService;
+import by.karpovich.SocialMedia.service.RoleServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/admins/roles")
+@RequestMapping("/api/roles")
 @RequiredArgsConstructor
 public class AdminRolesController {
 
-    private final RoleService roleService;
+    private final RoleServiceImpl roleServiceImpl;
 
     @PostMapping
     public RoleEntity save(@RequestBody RoleDto dto) {
-        return roleService.saveRole(dto);
+        return roleServiceImpl.saveRole(dto);
     }
 
     @GetMapping("/{id}")
     public RoleDto findById(@PathVariable("id") Long id) {
-        return roleService.findRoleById(id);
+        return roleServiceImpl.findRoleById(id);
     }
 
     @GetMapping
     public List<RoleDto> findAll() {
-        return roleService.findRolesAll();
+        return roleServiceImpl.findRolesAll();
     }
 
     @PutMapping("/{id}")
     public RoleDto update(@RequestBody RoleDto dto,
                           @PathVariable("id") Long id) {
-        return roleService.updateRoleById(id, dto);
+        return roleServiceImpl.updateRoleById(id, dto);
     }
 
     @DeleteMapping("/{id}")
     public void deleteById(@PathVariable("id") Long id) {
-        roleService.deleteRoleById(id);
+        roleServiceImpl.deleteRoleById(id);
     }
 }

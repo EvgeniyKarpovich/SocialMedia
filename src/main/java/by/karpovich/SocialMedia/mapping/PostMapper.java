@@ -7,7 +7,7 @@ import by.karpovich.SocialMedia.jpa.entity.PostEntity;
 import by.karpovich.SocialMedia.jpa.entity.UserEntity;
 import by.karpovich.SocialMedia.jpa.repository.UserRepository;
 import by.karpovich.SocialMedia.security.JwtUtils;
-import by.karpovich.SocialMedia.utils.FileUploadDownloadUtil;
+import by.karpovich.SocialMedia.utils.Utils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -39,8 +39,8 @@ public class PostMapper {
                 .sender(entity.getUser().getUsername())
                 .header(entity.getHeader())
                 .text(entity.getText())
-                .image(FileUploadDownloadUtil.getImageAsResponseEntity(entity.getImage()))
-                .dateOfCreation(FileUploadDownloadUtil.mapStringFromInstant(entity.getDateOfCreation()))
+                .image(Utils.getImageAsResponseEntity(entity.getImage()))
+                .dateOfCreation(Utils.mapStringFromInstant(entity.getDateOfCreation()))
                 .build();
 
     }

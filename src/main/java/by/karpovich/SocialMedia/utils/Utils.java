@@ -15,12 +15,15 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
-public class FileUploadDownloadUtil {
+public class Utils {
 
     public static final String UPLOAD_PATH = "D://image//poster";
     public static final String DATE_STRING = "dd MMMM yyyy HH:mm";
 
     public static String saveFile(MultipartFile file) {
+        if (file == null) {
+            return null;
+        }
 
         Path uploadPath = Paths.get(UPLOAD_PATH);
 
@@ -28,7 +31,7 @@ public class FileUploadDownloadUtil {
             try {
                 Files.createDirectories(uploadPath);
             } catch (IOException e) {
-                e.printStackTrace();
+                throw new RuntimeException("Incorrect path");
             }
         }
 
@@ -39,7 +42,7 @@ public class FileUploadDownloadUtil {
             Path filePath = uploadPath.resolve(name);
             Files.copy(inputStream, filePath, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Incorrect path");
         }
 
         return name;
@@ -56,12 +59,15 @@ public class FileUploadDownloadUtil {
             in = new FileInputStream(dirPath + fileName);
             media = IOUtils.toByteArray(in);
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Incorrect path");
         }
         return media;
     }
 
     public static String mapStringFromInstant(Instant instant) {
+        if (instant == null) {
+            return null;
+        }
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_STRING)
                 .withZone(ZoneId.systemDefault());
 
