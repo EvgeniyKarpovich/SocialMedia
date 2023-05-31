@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
@@ -49,8 +51,18 @@ public class UserController {
     }
 
     @GetMapping("/followers")
-    public String aaaa(@RequestHeader(value = "Authorization") String authorization) {
+    public List<String> aaaa(@RequestHeader(value = "Authorization") String authorization) {
         return userService.getFollowers(authorization);
     }
 
+    @GetMapping("/friends")
+    public List<String> bbbb(@RequestHeader(value = "Authorization") String authorization) {
+        return userService.getFriends(authorization);
+    }
+
+    @PutMapping("/proba2/{reqId}")
+    public void accept(@PathVariable("reqId") Long reqId,
+                       @RequestHeader(value = "Authorization") String authorization) {
+        userService.acceptRequest(authorization, reqId);
+    }
 }

@@ -50,16 +50,13 @@ public class UserEntity {
     @OneToMany(mappedBy = "receiver", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<FriendRequestEntity> receivedFriendRequests = new ArrayList<>();
 
-    @ManyToMany
-    @JoinTable(
-            name = "friends",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "friend_id")
-    )
-    private Set<UserEntity> friends = new HashSet<>();
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "friend_id")
+    private List<UserEntity> friends = new ArrayList<>();
 
-    @ManyToMany(mappedBy = "friends")
-    private Set<UserEntity> followers = new HashSet<>();
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "follower_id")
+    private List<UserEntity> followers = new ArrayList<>();
 
     @CreatedDate
     @Column(name = "date_of_creation", updatable = false)

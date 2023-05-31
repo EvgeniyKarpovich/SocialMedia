@@ -24,7 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -118,11 +117,62 @@ public class UserService {
         userRepository.save(recipient);
     }
 
-    public String getFollowers(String auth) {
+    @Transactional
+    public void acceptRequest(String authorization, Long requestId) {
+        UserEntity receiver = findUserEntityByIdFromToken(authorization);
+
+        FriendRequestEntity request = checkAvailabilityRequest(requestId, receiver);
+
+        request.setRequestStatus(RequestStatus.ACCEPTED);
+        receiver.getFriends().add(request.getSender());
+        UserEntity sender = request.getSender();
+        sender.getFriends().add(receiver);
+
+        userRepository.save(sender);
+        userRepository.save(receiver);
+    }
+
+    @Transactional
+    public void rejectRequest(String authorization, Long requestId) {
+        UserEntity user = findUserEntityByIdFromToken(authorization);
+
+        FriendRequestEntity request = checkAvailabilityRequest(requestId, user);
+        request.setRequestStatus(RequestStatus.REJECTED);
+        friendRequestRepository.save(request);
+    }
+
+    @Transactional
+    public void unsubscribe(String authorization, Long requestId) {
+        UserEntity user = findUserEntityByIdFromToken(authorization);
+
+        FriendRequestEntity request = checkAvailabilityRequest(requestId, user);
+        request.getSender().getSentFriendRequests().remove(request);
+
+        userRepository.save(user);
+        friendRequestRepository.save(request);
+    }
+
+    private FriendRequestEntity checkAvailabilityRequest(Long requestId, UserEntity user) {
+        return user.getReceivedFriendRequests().stream()
+                .filter(req -> req.getId().equals(requestId))
+                .findFirst()
+                .orElseThrow(() -> new NotFoundModelException("Request not found"));
+    }
+
+    public List<String> getFollowers(String auth) {
         UserEntity userEntityByIdFromToken = findUserEntityByIdFromToken(auth);
-        Set<UserEntity> followers = userEntityByIdFromToken.getFollowers();
-        UserEntity userEntity = followers.stream().findFirst()
-                .get();
-        return userEntity.getUsername();
+        List<UserEntity> followers = userEntityByIdFromToken.getFollowers();
+        return followers.stream()
+                .map(UserEntity::getUsername)
+                .collect(Collectors.toList());
+    }
+
+    public List<String> getFriends(String auth) {
+        UserEntity userEntityByIdFromToken = findUserEntityByIdFromToken(auth);
+
+        return userEntityByIdFromToken.getFriends()
+                .stream()
+                .map(UserEntity::getUsername)
+                .collect(Collectors.toList());
     }
 }
