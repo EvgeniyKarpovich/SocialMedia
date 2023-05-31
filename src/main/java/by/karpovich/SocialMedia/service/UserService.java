@@ -4,7 +4,10 @@ import by.karpovich.SocialMedia.api.dto.authentification.JwtResponse;
 import by.karpovich.SocialMedia.api.dto.authentification.LoginForm;
 import by.karpovich.SocialMedia.api.dto.authentification.RegistrationForm;
 import by.karpovich.SocialMedia.exception.NotFoundModelException;
+import by.karpovich.SocialMedia.jpa.entity.FriendRequestEntity;
+import by.karpovich.SocialMedia.jpa.entity.RequestStatus;
 import by.karpovich.SocialMedia.jpa.entity.UserEntity;
+import by.karpovich.SocialMedia.jpa.repository.FriendRequestRepository;
 import by.karpovich.SocialMedia.jpa.repository.UserRepository;
 import by.karpovich.SocialMedia.mapping.UserMapper;
 import by.karpovich.SocialMedia.security.JwtUtils;
@@ -21,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -32,6 +36,7 @@ public class UserService {
     private final AuthenticationManager authenticationManager;
     private final JwtUtils jwtUtils;
     private final UserMapper userMapper;
+    private final FriendRequestRepository friendRequestRepository;
 
     @Transactional
     public void signUp(RegistrationForm dto) {
@@ -91,5 +96,33 @@ public class UserService {
         String token = authorization.substring(7);
         String userIdFromJWT = jwtUtils.getUserIdFromJWT(token);
         return Long.parseLong(userIdFromJWT);
+    }
+
+    @Transactional
+    public void sendFriendRequest(String authorization, Long recipientRequestId) {
+        UserEntity sender = findUserEntityByIdFromToken(authorization);
+        UserEntity recipient = findUserByIdWhichWillReturnModel(recipientRequestId);
+
+        FriendRequestEntity request = new FriendRequestEntity();
+        request.setRequestStatus(RequestStatus.PENDING);
+        request.setSender(sender);
+        request.setReceiver(recipient);
+
+        friendRequestRepository.save(request);
+
+        sender.getSentFriendRequests().add(request);
+        recipient.getReceivedFriendRequests().add(request);
+        recipient.getFollowers().add(sender);
+
+        userRepository.save(sender);
+        userRepository.save(recipient);
+    }
+
+    public String getFollowers(String auth) {
+        UserEntity userEntityByIdFromToken = findUserEntityByIdFromToken(auth);
+        Set<UserEntity> followers = userEntityByIdFromToken.getFollowers();
+        UserEntity userEntity = followers.stream().findFirst()
+                .get();
+        return userEntity.getUsername();
     }
 }

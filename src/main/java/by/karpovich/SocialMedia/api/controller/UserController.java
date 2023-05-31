@@ -3,6 +3,7 @@ package by.karpovich.SocialMedia.api.controller;
 import by.karpovich.SocialMedia.api.dto.post.PostDtoForSaveUpdate;
 import by.karpovich.SocialMedia.api.dto.post.PostDtoOut;
 import by.karpovich.SocialMedia.service.PostService;
+import by.karpovich.SocialMedia.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -13,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class UserController {
 
     private final PostService postService;
+    private final UserService userService;
 
     @PostMapping("/posts")
     public PostDtoOut save(@RequestBody PostDtoForSaveUpdate postDto,
@@ -39,4 +41,16 @@ public class UserController {
                            @RequestHeader(value = "Authorization") String authorization) {
         postService.deletePost(postId, authorization);
     }
+
+    @PutMapping("/proba/{userId}")
+    public void request(@PathVariable("userId") Long userId,
+                        @RequestHeader(value = "Authorization") String authorization) {
+        userService.sendFriendRequest(authorization, userId);
+    }
+
+    @GetMapping("/followers")
+    public String aaaa(@RequestHeader(value = "Authorization") String authorization) {
+        return userService.getFollowers(authorization);
+    }
+
 }

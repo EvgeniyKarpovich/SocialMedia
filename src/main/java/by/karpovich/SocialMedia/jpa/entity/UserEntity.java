@@ -41,8 +41,25 @@ public class UserEntity {
             inverseJoinColumns = @JoinColumn(name = "role_id"))
     private Set<RoleEntity> roles = new HashSet<>();
 
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     private List<PostEntity> posts = new ArrayList<>();
+
+    @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<FriendRequestEntity> sentFriendRequests = new ArrayList<>();
+
+    @OneToMany(mappedBy = "receiver", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<FriendRequestEntity> receivedFriendRequests = new ArrayList<>();
+
+    @ManyToMany
+    @JoinTable(
+            name = "friends",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "friend_id")
+    )
+    private Set<UserEntity> friends = new HashSet<>();
+
+    @ManyToMany(mappedBy = "friends")
+    private Set<UserEntity> followers = new HashSet<>();
 
     @CreatedDate
     @Column(name = "date_of_creation", updatable = false)
