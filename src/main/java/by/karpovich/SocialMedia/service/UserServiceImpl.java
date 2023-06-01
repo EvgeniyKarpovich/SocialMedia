@@ -3,7 +3,9 @@ package by.karpovich.SocialMedia.service;
 import by.karpovich.SocialMedia.api.dto.authentification.JwtResponse;
 import by.karpovich.SocialMedia.api.dto.authentification.LoginForm;
 import by.karpovich.SocialMedia.api.dto.authentification.RegistrationForm;
+import by.karpovich.SocialMedia.exception.DuplicateException;
 import by.karpovich.SocialMedia.exception.NotFoundModelException;
+import by.karpovich.SocialMedia.exception.RejectedException;
 import by.karpovich.SocialMedia.jpa.entity.FriendRequestEntity;
 import by.karpovich.SocialMedia.jpa.entity.RequestStatus;
 import by.karpovich.SocialMedia.jpa.entity.UserEntity;
@@ -86,7 +88,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserEntity findUserByIdWhichWillReturnModel(Long id) {
         return userRepository.findById(id).orElseThrow(
-                () -> new NotFoundModelException("User with id = " + id + "not found"));
+                () -> new NotFoundModelException("User with id = " + id + " not found"));
     }
 
     public UserEntity findUserEntityByIdFromToken(String token) {
@@ -104,36 +106,67 @@ public class UserServiceImpl implements UserService {
     //ОБработать случай когда уже отправил запрос , чтобы нельзя было отправить еще один
     @Override
     @Transactional
-    public void sendFriendRequest(String authorization, Long recipientRequestId) {
+    public void sendFriendRequest(String authorization, Long receiverId) {
         UserEntity sender = findUserEntityByIdFromToken(authorization);
-        UserEntity recipient = findUserByIdWhichWillReturnModel(recipientRequestId);
+        UserEntity receiver = findUserByIdWhichWillReturnModel(receiverId);
 
-        FriendRequestEntity request = new FriendRequestEntity();
-        request.setRequestStatus(RequestStatus.PENDING);
-        request.setSender(sender);
-        request.setReceiver(recipient);
+        //Нельзя отправлять самому себе)
+        if (receiverId.equals(sender.getId())) {
+            throw new RuntimeException("You cannot send a request to yourself");
+        }
 
-        friendRequestRepository.save(request);
+        //проверяю наличие запроса у получателя , если отправитель уже послал запрос - ошибка
+        boolean checkRequestFromReceiver = sender.getSentFriendRequests().stream()
+                .anyMatch(req -> req.getReceiver().getId().equals(receiver.getId()));
+        if (checkRequestFromReceiver) {
+            throw new DuplicateException("You have already submitted a request");
+        }
 
-        sender.getSentFriendRequests().add(request);
-        recipient.getReceivedFriendRequests().add(request);
-        recipient.getFollowers().add(sender);
+        //Ищу запрос, если он есть и его статус Pending - ошибка , если нет - создаю новый запрос
+        FriendRequestEntity request = findSenderRequestByReceiver(sender, receiver);
+
+        if (request != null && findRequestByIdFromUser(request.getId(), sender).getRequestStatus().equals(RequestStatus.PENDING)) {
+            throw new RejectedException("Request being processed ");
+        }
+
+        FriendRequestEntity newRequest = FriendRequestEntity.builder()
+                .requestStatus(RequestStatus.PENDING)
+                .sender(sender)
+                .receiver(receiver)
+                .build();
+
+        friendRequestRepository.save(newRequest);
+
+        sender.getSentFriendRequests().add(newRequest);
+        receiver.getReceivedFriendRequests().add(newRequest);
+        receiver.getFollowers().add(sender);
+        sender.getSubscriptions().add(receiver);
 
         userRepository.save(sender);
-        userRepository.save(recipient);
+        userRepository.save(receiver);
     }
 
+    //ОБработать случаи когда уже принял запрос. если статус ACCEPT брось эксепшн
     @Override
     @Transactional
     public void acceptRequest(String authorization, Long requestId) {
         UserEntity receiver = findUserEntityByIdFromToken(authorization);
 
-        FriendRequestEntity request = checkAvailabilityRequest(requestId, receiver);
+        FriendRequestEntity request = findRequestByIdFromUser(requestId, receiver);
+
+        if (!request.getRequestStatus().equals(RequestStatus.PENDING)) {
+            throw new RejectedException("You have already answered this request");
+        }
+
+        UserEntity sender = request.getSender();
 
         request.setRequestStatus(RequestStatus.ACCEPTED);
-        receiver.getFriends().add(request.getSender());
-        UserEntity sender = request.getSender();
+        receiver.getFriends().add(sender);
+        receiver.getSubscriptions().add(request.getSender());
+        receiver.getFollowers().add(sender);
+
         sender.getFriends().add(receiver);
+        sender.getFollowers().add(receiver);
 
         userRepository.save(sender);
         userRepository.save(receiver);
@@ -142,10 +175,15 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void rejectRequest(String authorization, Long requestId) {
-        UserEntity user = findUserEntityByIdFromToken(authorization);
+        UserEntity receiver = findUserEntityByIdFromToken(authorization);
 
-        FriendRequestEntity request = checkAvailabilityRequest(requestId, user);
+        FriendRequestEntity request = findRequestByIdFromUser(requestId, receiver);
+
+        if (!request.getRequestStatus().equals(RequestStatus.PENDING)) {
+            throw new RejectedException("You have already answered this request");
+        }
         request.setRequestStatus(RequestStatus.REJECTED);
+
         friendRequestRepository.save(request);
     }
 
@@ -154,18 +192,29 @@ public class UserServiceImpl implements UserService {
     public void unsubscribe(String authorization, Long requestId) {
         UserEntity user = findUserEntityByIdFromToken(authorization);
 
-        FriendRequestEntity request = checkAvailabilityRequest(requestId, user);
+        FriendRequestEntity request = findRequestByIdFromUser(requestId, user);
         request.getSender().getSentFriendRequests().remove(request);
+        user.getFriends().remove(request.getReceiver());
+        user.getFollowers().remove(request.getReceiver());
 
         userRepository.save(user);
         friendRequestRepository.save(request);
     }
 
-    private FriendRequestEntity checkAvailabilityRequest(Long requestId, UserEntity user) {
+    //Ищу запрос у юзера , если нет - ошибка
+    private FriendRequestEntity findRequestByIdFromUser(Long requestId, UserEntity user) {
         return user.getReceivedFriendRequests().stream()
                 .filter(req -> req.getId().equals(requestId))
                 .findFirst()
                 .orElseThrow(() -> new NotFoundModelException("Request not found"));
+    }
+
+    //Ищу запрос у отправителя по айдишнику получателя
+    private FriendRequestEntity findSenderRequestByReceiver(UserEntity sender, UserEntity receiver) {
+        return sender.getSentFriendRequests().stream()
+                .filter(req -> req.getReceiver().getId().equals(receiver.getId()))
+                .findFirst()
+                .orElse(null);
     }
 
     public List<String> getFollowers(String auth) {
@@ -184,4 +233,19 @@ public class UserServiceImpl implements UserService {
                 .map(UserEntity::getUsername)
                 .collect(Collectors.toList());
     }
+
+    public List<String> getSubscribers(String auth) {
+        UserEntity userEntityByIdFromToken = findUserEntityByIdFromToken(auth);
+
+        return userEntityByIdFromToken.getSubscriptions()
+                .stream()
+                .map(UserEntity::getUsername)
+                .collect(Collectors.toList());
+    }
+//
+//    private FriendRequestEntity findRequestById(Long id) {
+//        return friendRequestRepository.findById(id).orElseThrow(
+//                () -> new NotFoundModelException("AAA !!!!!!")
+//        );
+//    }
 }

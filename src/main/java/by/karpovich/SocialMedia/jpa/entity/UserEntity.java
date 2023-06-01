@@ -58,6 +58,10 @@ public class UserEntity {
     @JoinColumn(name = "follower_id")
     private List<UserEntity> followers = new ArrayList<>();
 
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "subscription_id")
+    private List<UserEntity> subscriptions = new ArrayList<>();
+
     @CreatedDate
     @Column(name = "date_of_creation", updatable = false)
     private Instant dateOfCreation;

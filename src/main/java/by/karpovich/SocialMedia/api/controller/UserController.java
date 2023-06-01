@@ -46,4 +46,9 @@ public class UserController {
     public List<String> getFriends(@RequestHeader(value = "Authorization") String authorization) {
         return userServiceImpl.getFriends(authorization);
     }
+
+    @GetMapping("/subscribers")
+    public List<String> getSub(@RequestHeader(value = "Authorization") String authorization) {
+        return userServiceImpl.getSubscribers(authorization);
+    }
 }
