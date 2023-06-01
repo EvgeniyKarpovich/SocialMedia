@@ -124,7 +124,6 @@ public class UserServiceImpl implements UserService {
 
         //Ищу запрос, если он есть и его статус Pending - ошибка , если нет - создаю новый запрос
         FriendRequestEntity request = findSenderRequestByReceiver(sender, receiver);
-
         if (request != null && findRequestByIdFromUser(request.getId(), sender).getRequestStatus().equals(RequestStatus.PENDING)) {
             throw new RejectedException("Request being processed ");
         }
@@ -192,7 +191,8 @@ public class UserServiceImpl implements UserService {
     public void unsubscribe(String authorization, Long requestId) {
         UserEntity user = findUserEntityByIdFromToken(authorization);
 
-        FriendRequestEntity request = findRequestByIdFromUser(requestId, user);
+        FriendRequestEntity request =
+                findRequestByIdFromUser(requestId, user);
         request.getSender().getSentFriendRequests().remove(request);
         user.getFriends().remove(request.getReceiver());
         user.getFollowers().remove(request.getReceiver());
@@ -202,8 +202,8 @@ public class UserServiceImpl implements UserService {
     }
 
     //Ищу запрос у юзера , если нет - ошибка
-    private FriendRequestEntity findRequestByIdFromUser(Long requestId, UserEntity user) {
-        return user.getReceivedFriendRequests().stream()
+    private FriendRequestEntity findRequestByIdFromUser(Long requestId, UserEntity receiver) {
+        return receiver.getReceivedFriendRequests().stream()
                 .filter(req -> req.getId().equals(requestId))
                 .findFirst()
                 .orElseThrow(() -> new NotFoundModelException("Request not found"));
