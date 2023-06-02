@@ -3,7 +3,10 @@ package by.karpovich.SocialMedia.api.controller;
 import by.karpovich.SocialMedia.api.dto.post.PostDtoForSaveUpdate;
 import by.karpovich.SocialMedia.api.dto.post.PostDtoOut;
 import by.karpovich.SocialMedia.service.PostServiceImpl;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -13,6 +16,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/posts")
 @RequiredArgsConstructor
+@Tag(name = "Post Controller", description = "Post API")
 public class PostController {
 
     private final PostServiceImpl postServiceImpl;
@@ -23,7 +27,7 @@ public class PostController {
         return postServiceImpl.save(postDto, authorization);
     }
 
-    @PutMapping("/images/{postId}")
+    @PostMapping(value = "/images/{postId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public void addImage(@PathVariable("postId") Long postId,
                          @RequestHeader(value = "Authorization") String authorization,
                          @RequestPart("file") MultipartFile file) {

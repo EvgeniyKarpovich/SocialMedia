@@ -4,6 +4,7 @@ import by.karpovich.SocialMedia.api.dto.authentification.JwtResponse;
 import by.karpovich.SocialMedia.api.dto.authentification.LoginForm;
 import by.karpovich.SocialMedia.api.dto.authentification.RegistrationForm;
 import by.karpovich.SocialMedia.service.UserServiceImpl;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Tag(name = "Authentication Controller", description = "Authentication API")
 public class AuthController {
 
     private final UserServiceImpl userServiceImpl;

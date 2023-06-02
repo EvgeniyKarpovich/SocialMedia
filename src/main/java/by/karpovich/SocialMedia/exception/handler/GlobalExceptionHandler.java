@@ -1,6 +1,7 @@
 package by.karpovich.SocialMedia.exception.handler;
 
 import by.karpovich.SocialMedia.exception.DuplicateException;
+import by.karpovich.SocialMedia.exception.ImpossibleActionException;
 import by.karpovich.SocialMedia.exception.NotFoundModelException;
 import by.karpovich.SocialMedia.exception.RejectedException;
 import lombok.AllArgsConstructor;
@@ -45,6 +46,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(RejectedException.class)
     public ResponseEntity<ResponseBody> handlerMethodArgumentNotValidException(RejectedException e) {
+        ResponseBody exceptionResponse = new ResponseBody(
+                Collections.singletonList(e.getMessage()), HttpStatus.BAD_REQUEST, Instant.now());
+        return new ResponseEntity<>(exceptionResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(ImpossibleActionException.class)
+    public ResponseEntity<ResponseBody> handlerMethodArgumentNotValidException(ImpossibleActionException e) {
         ResponseBody exceptionResponse = new ResponseBody(
                 Collections.singletonList(e.getMessage()), HttpStatus.BAD_REQUEST, Instant.now());
         return new ResponseEntity<>(exceptionResponse, HttpStatus.BAD_REQUEST);

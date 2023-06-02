@@ -1,6 +1,7 @@
 package by.karpovich.SocialMedia.api.controller;
 
 import by.karpovich.SocialMedia.service.UserServiceImpl;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -9,6 +10,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
+@Tag(name = "User Controller", description = "User API")
 public class UserController {
 
     private final UserServiceImpl userServiceImpl;

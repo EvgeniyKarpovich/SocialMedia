@@ -7,7 +7,6 @@ import by.karpovich.SocialMedia.jpa.entity.RoleEntity;
 import by.karpovich.SocialMedia.jpa.repository.RoleRepository;
 import by.karpovich.SocialMedia.mapping.RoleMapper;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,7 +15,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RoleServiceImpl implements RoleService {
@@ -29,7 +27,6 @@ public class RoleServiceImpl implements RoleService {
     public RoleEntity saveRole(RoleDto dto) {
         validateAlreadyExists(dto, null);
 
-        log.info("method saveRole - Role with name = {} saved", dto.getName());
         return roleRepository.save(roleMapper.mapEntityFromDto(dto));
     }
 
@@ -43,7 +40,6 @@ public class RoleServiceImpl implements RoleService {
         Set<RoleEntity> userRoles = new HashSet<>();
         userRoles.add(roleEntity);
 
-        log.info("method findRoleByName - Role with name = {} find", role);
         return userRoles;
     }
 
@@ -52,7 +48,6 @@ public class RoleServiceImpl implements RoleService {
         var role = roleRepository.findById(id).orElseThrow(
                 () -> new NotFoundModelException(String.format("Role with id = %s not found", id)));
 
-        log.info("method findRoleById - Role found with id = {} ", role.getId());
         return roleMapper.mapDtoFromEntity(role);
     }
 
@@ -60,7 +55,6 @@ public class RoleServiceImpl implements RoleService {
     public List<RoleDto> findRolesAll() {
         List<RoleEntity> roles = roleRepository.findAll();
 
-        log.info("method findRolesAll - the number of roles found  = {} ", roles.size());
         return roleMapper.mapListDtoFromListEntity(roles);
     }
 
@@ -73,7 +67,6 @@ public class RoleServiceImpl implements RoleService {
         entity.setId(id);
         var updated = roleRepository.save(entity);
 
-        log.info("method updateRoleById - Role {} updated", updated.getName());
         return roleMapper.mapDtoFromEntity(updated);
     }
 
@@ -85,7 +78,6 @@ public class RoleServiceImpl implements RoleService {
         } else {
             throw new NotFoundModelException(String.format("Role with id = %s not found", id));
         }
-        log.info("method deleteRoleById - Role with id = {} deleted", id);
     }
 
     private void validateAlreadyExists(RoleDto dto, Long id) {

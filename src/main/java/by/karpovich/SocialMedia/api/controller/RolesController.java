@@ -3,6 +3,7 @@ package by.karpovich.SocialMedia.api.controller;
 import by.karpovich.SocialMedia.api.dto.role.RoleDto;
 import by.karpovich.SocialMedia.jpa.entity.RoleEntity;
 import by.karpovich.SocialMedia.service.RoleServiceImpl;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,6 +12,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/roles")
 @RequiredArgsConstructor
+@Tag(name = "Role Controller", description = "Role API")
 public class RolesController {
 
     private final RoleServiceImpl roleServiceImpl;

@@ -8,7 +8,8 @@ import lombok.Data;
 
 @Data
 @Builder
-public class UserForUpdate {
+public class
+UserForUpdate {
 
     @ValidUsername
     @NotBlank(message = "Enter name")

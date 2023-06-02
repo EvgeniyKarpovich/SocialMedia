@@ -2,6 +2,7 @@ package by.karpovich.SocialMedia.service;
 
 import by.karpovich.SocialMedia.api.dto.post.PostDtoForSaveUpdate;
 import by.karpovich.SocialMedia.api.dto.post.PostDtoOut;
+import by.karpovich.SocialMedia.exception.ImpossibleActionException;
 import by.karpovich.SocialMedia.exception.NotFoundModelException;
 import by.karpovich.SocialMedia.jpa.entity.PostEntity;
 import by.karpovich.SocialMedia.jpa.entity.UserEntity;
@@ -9,7 +10,6 @@ import by.karpovich.SocialMedia.jpa.repository.PostRepository;
 import by.karpovich.SocialMedia.mapping.PostMapper;
 import by.karpovich.SocialMedia.utils.Utils;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PostServiceImpl implements PostService {
@@ -96,6 +95,6 @@ public class PostServiceImpl implements PostService {
         return userEntityByIdFromToken.getPosts().stream()
                 .filter(post -> post.getId().equals(postId))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("You can't do it"));
+                .orElseThrow(() -> new ImpossibleActionException("You can't do it"));
     }
 }

@@ -4,8 +4,8 @@ import by.karpovich.SocialMedia.api.dto.authentification.JwtResponse;
 import by.karpovich.SocialMedia.api.dto.authentification.LoginForm;
 import by.karpovich.SocialMedia.api.dto.authentification.RegistrationForm;
 import by.karpovich.SocialMedia.exception.DuplicateException;
+import by.karpovich.SocialMedia.exception.ImpossibleActionException;
 import by.karpovich.SocialMedia.exception.NotFoundModelException;
-import by.karpovich.SocialMedia.exception.RejectedException;
 import by.karpovich.SocialMedia.jpa.entity.FriendRequestEntity;
 import by.karpovich.SocialMedia.jpa.entity.RequestStatus;
 import by.karpovich.SocialMedia.jpa.entity.UserEntity;
@@ -15,7 +15,6 @@ import by.karpovich.SocialMedia.mapping.UserMapper;
 import by.karpovich.SocialMedia.security.JwtUtils;
 import by.karpovich.SocialMedia.security.UserDetailsImpl;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -28,7 +27,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
@@ -68,27 +66,21 @@ public class UserServiceImpl implements UserService {
                 .build();
     }
 
-    private List<String> mapStringRolesFromUserDetails(UserDetailsImpl userDetails) {
-        return userDetails.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toList());
-    }
-
     @Override
     public UserEntity findUserByName(String username) {
         Optional<UserEntity> userByName = userRepository.findByUsername(username);
 
-        var entity = userByName.orElseThrow(
+        UserEntity entity = userByName.orElseThrow(
                 () -> new NotFoundModelException(String.format("User with username = %s not found", username))
         );
-        log.info("method findByName -  User with username = {} found", entity.getUsername());
         return entity;
     }
 
     @Override
     public UserEntity findUserByIdWhichWillReturnModel(Long id) {
         return userRepository.findById(id).orElseThrow(
-                () -> new NotFoundModelException("User with id = " + id + " not found"));
+                () -> new NotFoundModelException(String.format("User with username = %s not found", id))
+        );
     }
 
     public UserEntity findUserEntityByIdFromToken(String token) {
@@ -103,7 +95,6 @@ public class UserServiceImpl implements UserService {
         return Long.parseLong(userIdFromJWT);
     }
 
-    //ОБработать случай когда уже отправил запрос , чтобы нельзя было отправить еще один
     @Override
     @Transactional
     public void sendFriendRequest(String authorization, Long receiverId) {
@@ -112,7 +103,7 @@ public class UserServiceImpl implements UserService {
 
         //Нельзя отправлять самому себе)
         if (receiverId.equals(sender.getId())) {
-            throw new RuntimeException("You cannot send a request to yourself");
+            throw new ImpossibleActionException("You cannot send a request to yourself");
         }
 
         //проверяю наличие запроса у получателя , если отправитель уже послал запрос - ошибка
@@ -123,9 +114,9 @@ public class UserServiceImpl implements UserService {
         }
 
         //Ищу запрос, если он есть и его статус Pending - ошибка , если нет - создаю новый запрос
-        FriendRequestEntity request = findSenderRequestByReceiver(sender, receiver);
-        if (request != null && findRequestByIdFromUser(request.getId(), sender).getRequestStatus().equals(RequestStatus.PENDING)) {
-            throw new RejectedException("Request being processed ");
+        FriendRequestEntity request = friendRequestRepository.findFriendRequestByUserIdByReceiverId(sender.getId(), receiver.getId());
+        if (request != null && request.getRequestStatus().equals(RequestStatus.PENDING)) {
+            throw new ImpossibleActionException("Request being processed ");
         }
 
         FriendRequestEntity newRequest = FriendRequestEntity.builder()
@@ -145,16 +136,15 @@ public class UserServiceImpl implements UserService {
         userRepository.save(receiver);
     }
 
-    //ОБработать случаи когда уже принял запрос. если статус ACCEPT брось эксепшн
     @Override
     @Transactional
     public void acceptRequest(String authorization, Long requestId) {
         UserEntity receiver = findUserEntityByIdFromToken(authorization);
 
-        FriendRequestEntity request = findRequestByIdFromUser(requestId, receiver);
+        FriendRequestEntity request = friendRequestRepository.findFriendRequestFromUserByRequestId(requestId, receiver.getId());
 
         if (!request.getRequestStatus().equals(RequestStatus.PENDING)) {
-            throw new RejectedException("You have already answered this request");
+            throw new ImpossibleActionException("You have already accepted or declined this request");
         }
 
         UserEntity sender = request.getSender();
@@ -175,11 +165,13 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void rejectRequest(String authorization, Long requestId) {
         UserEntity receiver = findUserEntityByIdFromToken(authorization);
+        FriendRequestEntity request = friendRequestRepository.findFriendRequestByIdFromUser(receiver.getId(), requestId);
 
-        FriendRequestEntity request = findRequestByIdFromUser(requestId, receiver);
-
+        if (request == null) {
+            throw new NotFoundModelException("Request bot found");
+        }
         if (!request.getRequestStatus().equals(RequestStatus.PENDING)) {
-            throw new RejectedException("You have already answered this request");
+            throw new ImpossibleActionException("You have already accepted or declined this request");
         }
         request.setRequestStatus(RequestStatus.REJECTED);
 
@@ -189,34 +181,28 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void unsubscribe(String authorization, Long requestId) {
-        UserEntity user = findUserEntityByIdFromToken(authorization);
+        UserEntity receiver = findUserEntityByIdFromToken(authorization);
 
-        FriendRequestEntity request =
-                findRequestByIdFromUser(requestId, user);
-        request.getSender().getSentFriendRequests().remove(request);
-        user.getFriends().remove(request.getReceiver());
-        user.getFollowers().remove(request.getReceiver());
+        FriendRequestEntity request = friendRequestRepository.findFriendRequestByIdFromUser(receiver.getId(), requestId);
 
-        userRepository.save(user);
+        if (request == null) {
+            throw new NotFoundModelException("Request bot found");
+        }
+
+        receiver.getFriends().remove(request.getReceiver());
+        receiver.getFollowers().remove(request.getReceiver());
+
+        userRepository.save(receiver);
         friendRequestRepository.save(request);
     }
 
-    //Ищу запрос у юзера , если нет - ошибка
-    private FriendRequestEntity findRequestByIdFromUser(Long requestId, UserEntity receiver) {
-        return receiver.getReceivedFriendRequests().stream()
-                .filter(req -> req.getId().equals(requestId))
-                .findFirst()
-                .orElseThrow(() -> new NotFoundModelException("Request not found"));
+    private List<String> mapStringRolesFromUserDetails(UserDetailsImpl userDetails) {
+        return userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toList());
     }
 
-    //Ищу запрос у отправителя по айдишнику получателя
-    private FriendRequestEntity findSenderRequestByReceiver(UserEntity sender, UserEntity receiver) {
-        return sender.getSentFriendRequests().stream()
-                .filter(req -> req.getReceiver().getId().equals(receiver.getId()))
-                .findFirst()
-                .orElse(null);
-    }
-
+    //ниже методы для тестирования
     public List<String> getFollowers(String auth) {
         UserEntity userEntityByIdFromToken = findUserEntityByIdFromToken(auth);
         List<UserEntity> followers = userEntityByIdFromToken.getFollowers();
@@ -242,10 +228,4 @@ public class UserServiceImpl implements UserService {
                 .map(UserEntity::getUsername)
                 .collect(Collectors.toList());
     }
-//
-//    private FriendRequestEntity findRequestById(Long id) {
-//        return friendRequestRepository.findById(id).orElseThrow(
-//                () -> new NotFoundModelException("AAA !!!!!!")
-//        );
-//    }
 }
