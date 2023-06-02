@@ -11,6 +11,9 @@ import by.karpovich.SocialMedia.utils.Utils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Component
 @RequiredArgsConstructor
 public class PostMapper {
@@ -42,7 +45,19 @@ public class PostMapper {
                 .image(Utils.getImageAsResponseEntity(entity.getImage()))
                 .dateOfCreation(Utils.mapStringFromInstant(entity.getDateOfCreation()))
                 .build();
+    }
 
+    public List<PostDtoOut> mapListPostDtoOutFromListPostEntity(List<PostEntity> postEntities) {
+        if (postEntities == null) {
+            return null;
+        }
+
+        List<PostDtoOut> dtoOuts = new ArrayList<>();
+        for (PostEntity postEntity : postEntities) {
+            dtoOuts.add(mapPostDtoOutFromPostEntity(postEntity));
+        }
+
+        return dtoOuts;
     }
 
     public UserEntity findUserByIdWhichWillReturnModel(Long id) {

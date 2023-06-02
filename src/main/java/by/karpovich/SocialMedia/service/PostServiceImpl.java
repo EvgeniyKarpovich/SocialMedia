@@ -10,9 +10,17 @@ import by.karpovich.SocialMedia.mapping.PostMapper;
 import by.karpovich.SocialMedia.utils.Utils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -52,6 +60,24 @@ public class PostServiceImpl implements PostService {
         postEntity.setId(postId);
 
         postRepository.save(postEntity);
+    }
+
+    @Override
+    public Map<String, Object> findAll(int page, int size, String authorization) {
+        UserEntity userEntityByIdFromToken = userServiceImpl.findUserEntityByIdFromToken(authorization);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("dateOfCreation").descending());
+        Page<PostEntity> allPostsEntity = postRepository.findAll(pageable, userEntityByIdFromToken.getId());
+        List<PostEntity> content = allPostsEntity.getContent();
+
+        List<PostDtoOut> postDtoOuts = postMapper.mapListPostDtoOutFromListPostEntity(content);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("Posts", postDtoOuts);
+        response.put("currentPage", allPostsEntity.getNumber());
+        response.put("totalItems", allPostsEntity.getTotalElements());
+        response.put("totalPages", allPostsEntity.getTotalPages());
+
+        return response;
     }
 
     @Override

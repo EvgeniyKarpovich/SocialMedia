@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Map;
+
 
 @RestController
 @RequestMapping("/api/posts")
@@ -39,5 +41,12 @@ public class PostController {
     public void deletePost(@PathVariable("postId") Long postId,
                            @RequestHeader(value = "Authorization") String authorization) {
         postServiceImpl.deletePost(postId, authorization);
+    }
+
+    @GetMapping
+    public Map<String, Object> findAll(@RequestHeader(value = "Authorization") String authorization,
+                                       @RequestParam(defaultValue = "0") int page,
+                                       @RequestParam(defaultValue = "20") int size) {
+        return postServiceImpl.findAll(page, size, authorization);
     }
 }
